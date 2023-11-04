@@ -6,10 +6,30 @@ import html
 import os
 import time
 
-users = {}
-sessions = {}
-messages = []
-current_message_id = 0
+# Initialize from saved data if available
+if os.path.exists('users.json'):
+    with open('users.json', 'r') as f:
+        users = json.load(f)
+else:
+    users = {}
+
+if os.path.exists('sessions.json'):
+    with open('sessions.json', 'r') as f:
+        sessions = json.load(f)
+else:
+    sessions = {}
+
+if os.path.exists('messages.json'):
+    with open('messages.json', 'r') as f:
+        messages = json.load(f)
+else:
+    messages = []
+
+if os.path.exists('current_message_id.txt'):
+    with open('current_message_id.txt', 'r') as f:
+        current_message_id = int(f.read().strip())
+else:
+    current_message_id = 0
 
 def parse_http_request(request):
     print(request)
@@ -89,6 +109,19 @@ def handle_client(client_socket):
             except FileNotFoundError:
                 response = 'HTTP/1.1 404 Not Found\r\n\r\n'
 
+    global users, sessions, messages, current_message_id
+
+    if method == 'POST' and path in ('/login', '/register', '/post_message', '/logout'):
+        # Save users, sessions, and messages to their respective files after modification
+        with open('users.json', 'w') as f:
+            json.dump(users, f)
+        with open('sessions.json', 'w') as f:
+            json.dump(sessions, f)
+        with open('messages.json', 'w') as f:
+            json.dump(messages, f)
+        with open('current_message_id.txt', 'w') as f:
+            f.write(str(current_message_id))
+    
     client_socket.sendall(response.encode('utf-8'))
     client_socket.close()
 
