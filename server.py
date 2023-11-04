@@ -6,6 +6,7 @@ import html
 import os
 import time
 
+lock = threading.Lock()
 # Initialize from saved data if available
 if os.path.exists('users.json'):
     with open('users.json', 'r') as f:
@@ -55,7 +56,8 @@ def handle_client(client_socket):
         elif users.get(params['username']) == params['password']:
             response = 'HTTP/1.1 302 Found\r\n'
             session_id = str(len(sessions))
-            sessions[session_id] = params['username']
+            with lock:
+                sessions[session_id] = params['username']
             response += 'Set-Cookie: session_id={}\r\n'.format(session_id)
             response += 'Location: /board.html\r\n\r\n'
         else:
@@ -65,7 +67,8 @@ def handle_client(client_socket):
         if not params.get('username') or not params.get('password'):
             response = 'HTTP/1.1 302 Found\r\nLocation: /register.html?error=2\r\n\r\n'  # error=2 for blank form
         elif params['username'] not in users:
-            users[params['username']] = params['password']
+            with lock:
+                users[params['username']] = params['password']
             response = 'HTTP/1.1 302 Found\r\nLocation: /login.html\r\n\r\n'
         else:
             response = 'HTTP/1.1 302 Found\r\nLocation: /register.html?error=1\r\n\r\n'  # error=1 for username already exists
@@ -73,14 +76,15 @@ def handle_client(client_socket):
         global current_message_id  # Make sure to declare this as global
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         params = dict(urllib.parse.parse_qsl(body))
-        message = {
-            'id': current_message_id,
-            'username': username,
-            'timestamp': timestamp,
-            'content': html.escape(params.get('message', ''))
-        }
-        messages.append(message)
-        current_message_id += 1  # Increment the message ID
+        with lock:
+            message = {
+                'id': current_message_id,
+                'username': username,
+                'timestamp': timestamp,
+                'content': html.escape(params.get('message', ''))
+            }
+            messages.append(message)
+            current_message_id += 1  # Increment the message ID
         response = 'HTTP/1.1 302 Found\r\nLocation: /board.html\r\n\r\n'
     elif method == 'GET' and path == '/logout':
         if session_id in sessions:
@@ -98,7 +102,7 @@ def handle_client(client_socket):
             if not path.startswith('/'):
                 path = '/' + path
             if path == '/':
-                path = '/index.html'
+                path = '/login.html'
             try:
                 with open(os.getcwd() + '/web' + path, 'r') as f:
                     content = f.read()
@@ -110,18 +114,17 @@ def handle_client(client_socket):
             except FileNotFoundError:
                 response = 'HTTP/1.1 404 Not Found\r\n\r\n'
 
-    
-
     if method == 'POST' and path in ('/login', '/register', '/post_message', '/logout'):
         # Save users, sessions, and messages to their respective files after modification
-        with open('users.json', 'w') as f:
-            json.dump(users, f)
-        with open('sessions.json', 'w') as f:
-            json.dump(sessions, f)
-        with open('messages.json', 'w') as f:
-            json.dump(messages, f)
-        with open('current_message_id.txt', 'w') as f:
-            f.write(str(current_message_id))
+        with lock:
+            with open('users.json', 'w') as f:
+                json.dump(users, f)
+            with open('sessions.json', 'w') as f:
+                json.dump(sessions, f)
+            with open('messages.json', 'w') as f:
+                json.dump(messages, f)
+            with open('current_message_id.txt', 'w') as f:
+                f.write(str(current_message_id))
     
     client_socket.sendall(response.encode('utf-8'))
     client_socket.close()
