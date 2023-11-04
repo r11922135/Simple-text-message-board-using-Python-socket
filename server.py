@@ -41,6 +41,7 @@ def parse_http_request(request):
     return method, path, query_string, headers, body
 
 def handle_client(client_socket):
+    global users, sessions, messages, current_message_id
     request_data = client_socket.recv(1024).decode('utf-8')
     method, path, query_string, headers, body = parse_http_request(request_data)
 
@@ -109,7 +110,7 @@ def handle_client(client_socket):
             except FileNotFoundError:
                 response = 'HTTP/1.1 404 Not Found\r\n\r\n'
 
-    global users, sessions, messages, current_message_id
+    
 
     if method == 'POST' and path in ('/login', '/register', '/post_message', '/logout'):
         # Save users, sessions, and messages to their respective files after modification
