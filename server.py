@@ -5,6 +5,7 @@ import json
 import html
 import os
 import time
+import ssl
 
 lock = threading.Lock()
 # Initialize from saved data if available
@@ -136,10 +137,18 @@ def start_server():
     server_socket.listen(5)
     print("Server is listening on port", 8080)
 
+     # Wrap the server socket with SSL
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain(certfile='server.crt', keyfile='server.key')  # Load your certificate and private key
+    ssl_server_socket = context.wrap_socket(server_socket, server_side=True)
+
     while True:
-        client_socket, client_address = server_socket.accept()
-        client_thread = threading.Thread(target=handle_client, args=(client_socket,))
-        client_thread.start()
+        try:
+            client_socket, client_address = ssl_server_socket.accept()
+            client_thread = threading.Thread(target=handle_client, args=(client_socket,))
+            client_thread.start()
+        except:
+            pass
 
 if __name__ == '__main__':
     start_server()
