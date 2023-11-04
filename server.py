@@ -9,6 +9,7 @@ import time
 users = {}
 sessions = {}
 messages = []
+current_message_id = 0
 
 def parse_http_request(request):
     print(request)
@@ -48,22 +49,27 @@ def handle_client(client_socket):
         else:
             response = 'HTTP/1.1 302 Found\r\nLocation: /register.html?error=1\r\n\r\n'  # error=1 for username already exists
     elif method == 'POST' and path == '/post_message':
+        global current_message_id  # Make sure to declare this as global
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         params = dict(urllib.parse.parse_qsl(body))
         message = {
+            'id': current_message_id,
             'username': username,
             'timestamp': timestamp,
             'content': html.escape(params.get('message', ''))
         }
         messages.append(message)
+        current_message_id += 1  # Increment the message ID
         response = 'HTTP/1.1 302 Found\r\nLocation: /board.html\r\n\r\n'
     elif method == 'GET' and path == '/logout':
         if session_id in sessions:
             del sessions[session_id]
         response = 'HTTP/1.1 302 Found\r\nLocation: /login.html\r\n\r\n'
     elif method == 'GET' and path == '/get_messages':
+        last_id = int(query_string.split('=')[-1]) if query_string else -1
+        new_messages = [msg for msg in messages if msg['id'] > last_id]
         response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'
-        response += json.dumps({'messages': messages})
+        response += json.dumps({'messages': new_messages})
     else:
         if not username and path not in ('/login.html', '/register.html'):
             response = 'HTTP/1.1 302 Found\r\nLocation: /login.html\r\n\r\n'

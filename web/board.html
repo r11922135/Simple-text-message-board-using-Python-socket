@@ -73,34 +73,37 @@
         <a href="/logout">Logout</a>
     </div>
     <script>
+        let lastMessageId = -1;
         let isUserAtBottom = true;
+    
         function loadMessages() {
             const messagesDiv = document.getElementById('messages');
             const currentScroll = messagesDiv.scrollTop + messagesDiv.clientHeight;
             const maxScroll = messagesDiv.scrollHeight;
             isUserAtBottom = (Math.abs(currentScroll - maxScroll) < 10);
-
-            fetch('/get_messages').then(response => response.json()).then(data => {
-                messagesDiv.innerHTML = '';
+    
+            fetch(`/get_messages?last_id=${lastMessageId}`).then(response => response.json()).then(data => {
                 data.messages.forEach(message => {
                     const messageDiv = document.createElement('div');
                     messageDiv.classList.add('message');
                     messageDiv.innerHTML = `<strong>${message.username}</strong> (${message.timestamp}): ${message.content}`;
                     messagesDiv.appendChild(messageDiv);
+                    
+                    lastMessageId = message.id; // Update the last message ID
                 });
-                if (isUserAtBottom) {
+                if (isUserAtBottom && data.messages.length > 0) {
                     messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to the bottom
                 }
             });
         }
-
+    
         document.getElementById('messages').addEventListener('scroll', () => {
             const messagesDiv = document.getElementById('messages');
             const currentScroll = messagesDiv.scrollTop + messagesDiv.clientHeight;
             const maxScroll = messagesDiv.scrollHeight;
             isUserAtBottom = (Math.abs(currentScroll - maxScroll) < 10);
         });
-
+    
         loadMessages();
         setInterval(loadMessages, 1000);
     </script>
