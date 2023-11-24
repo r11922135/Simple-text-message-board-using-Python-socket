@@ -38,7 +38,7 @@ def parse_http_request(request):
     headers, body = request.split('\r\n\r\n', 1)
     headers = headers.split('\r\n')
     method, path, _ = headers[0].split() # method, URL+query, version
-    path, _, query_string = path.partition('?') # URL, query
+    path, _, query_string = path.partition('?') # URL, '?', query
     headers = {k: v for k, v in (line.split(': ') for line in headers[1:])}
     return method, path, query_string, headers, body
 
@@ -59,6 +59,8 @@ def handle_client(client_socket):
             session_id = str(len(sessions))
             with lock:
                 sessions[session_id] = params['username']
+                with open('sessions.json', 'w') as f:
+                    json.dump(sessions, f)
             response += 'Set-Cookie: session_id={}\r\n'.format(session_id)
             response += 'Location: /board.html\r\n\r\n'
         else:
@@ -70,6 +72,8 @@ def handle_client(client_socket):
         elif params['username'] not in users:
             with lock:
                 users[params['username']] = params['password']
+                with open('users.json', 'w') as f:
+                    json.dump(users, f)
             response = 'HTTP/1.1 302 Found\r\nLocation: /login.html\r\n\r\n'
         else:
             response = 'HTTP/1.1 302 Found\r\nLocation: /register.html?error=1\r\n\r\n'  # error=1 for username already exists
@@ -86,10 +90,17 @@ def handle_client(client_socket):
             }
             messages.append(message)
             current_message_id += 1  # Increment the message ID
+            with open('messages.json', 'w') as f:
+                json.dump(messages, f)
+            with open('current_message_id.txt', 'w') as f:
+                f.write(str(current_message_id))
         response = 'HTTP/1.1 302 Found\r\nLocation: /board.html\r\n\r\n'
     elif method == 'GET' and path == '/logout':
-        if session_id in sessions:
-            del sessions[session_id]
+        with lock:
+            if session_id in sessions:
+                del sessions[session_id]
+            with open('sessions.json', 'w') as f:
+                json.dump(sessions, f)
         response = 'HTTP/1.1 302 Found\r\nLocation: /login.html\r\n\r\n'
     elif method == 'GET' and path == '/get_messages':
         last_id = int(query_string.split('=')[-1]) if query_string else -1
@@ -97,7 +108,7 @@ def handle_client(client_socket):
         response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'
         response += json.dumps({'messages': new_messages})
     else:
-        if not username and path not in ('/login.html', '/register.html'):
+        if not username and path not in ('/login.html', '/register.html'): #if not login, cannot enter the board page
             response = 'HTTP/1.1 302 Found\r\nLocation: /login.html\r\n\r\n'
         else:
             if not path.startswith('/'):
@@ -115,17 +126,17 @@ def handle_client(client_socket):
             except FileNotFoundError:
                 response = 'HTTP/1.1 404 Not Found\r\n\r\n'
 
-    if method == 'POST' and path in ('/login', '/register', '/post_message', '/logout'):
+    #if method == 'POST' and path in ('/login', '/register', '/post_message', '/logout'):
         # Save users, sessions, and messages to their respective files after modification
-        with lock:
-            with open('users.json', 'w') as f:
-                json.dump(users, f)
-            with open('sessions.json', 'w') as f:
-                json.dump(sessions, f)
-            with open('messages.json', 'w') as f:
-                json.dump(messages, f)
-            with open('current_message_id.txt', 'w') as f:
-                f.write(str(current_message_id))
+    #    with lock:
+    #        with open('users.json', 'w') as f:
+    #            json.dump(users, f)
+    #        with open('sessions.json', 'w') as f:
+    #            json.dump(sessions, f)
+    #        with open('messages.json', 'w') as f:
+    #            json.dump(messages, f)
+    #        with open('current_message_id.txt', 'w') as f:
+    #            f.write(str(current_message_id))
     
     client_socket.sendall(response.encode('utf-8'))
     client_socket.close()
