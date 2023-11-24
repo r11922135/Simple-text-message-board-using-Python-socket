@@ -37,8 +37,8 @@ def parse_http_request(request):
     print(request)
     headers, body = request.split('\r\n\r\n', 1)
     headers = headers.split('\r\n')
-    method, path, _ = headers[0].split()
-    path, _, query_string = path.partition('?')
+    method, path, _ = headers[0].split() # method, URL+query, version
+    path, _, query_string = path.partition('?') # URL, query
     headers = {k: v for k, v in (line.split(': ') for line in headers[1:])}
     return method, path, query_string, headers, body
 
@@ -137,7 +137,7 @@ def start_server():
     server_socket.listen(5)
     print("Server is listening on port", 8080)
 
-     # Wrap the server socket with SSL
+    # Wrap the server socket with SSL
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(certfile='server.crt', keyfile='server.key')  # Load your certificate and private key
     ssl_server_socket = context.wrap_socket(server_socket, server_side=True)
