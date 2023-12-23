@@ -107,6 +107,19 @@ def handle_client(client_socket):
         new_messages = [msg for msg in messages if msg['id'] > last_id]
         response = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n'
         response += json.dumps({'messages': new_messages})
+    elif method == 'GET' and path.startswith('/video/'):
+        # Serving static files (e.g., video, images)
+        try:
+            with open(path[1:], 'rb') as file:  # Adjust the path according to your directory structure
+                file_content = file.read()
+                # Set the appropriate content type (e.g., 'video/mp4' for mp4 files)
+                response = f'HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\nContent-Length: {len(file_content)}\r\n\r\n'
+                client_socket.sendall(response.encode() + file_content)
+        except FileNotFoundError:
+            client_socket.sendall(b'HTTP/1.1 404 Not Found\r\n\r\n')
+        finally:
+            client_socket.close()
+        return
     else:
         if not username and path not in ('/login.html', '/register.html'): #if not login, cannot enter the board page
             response = 'HTTP/1.1 302 Found\r\nLocation: /login.html\r\n\r\n'
@@ -125,18 +138,6 @@ def handle_client(client_socket):
                     response += 'Content-Length: {}\r\n\r\n{}'.format(len(content), content)
             except FileNotFoundError:
                 response = 'HTTP/1.1 404 Not Found\r\n\r\n'
-
-    #if method == 'POST' and path in ('/login', '/register', '/post_message', '/logout'):
-        # Save users, sessions, and messages to their respective files after modification
-    #    with lock:
-    #        with open('users.json', 'w') as f:
-    #            json.dump(users, f)
-    #        with open('sessions.json', 'w') as f:
-    #            json.dump(sessions, f)
-    #        with open('messages.json', 'w') as f:
-    #            json.dump(messages, f)
-    #        with open('current_message_id.txt', 'w') as f:
-    #            f.write(str(current_message_id))
     
     client_socket.sendall(response.encode('utf-8'))
     client_socket.close()
@@ -144,9 +145,9 @@ def handle_client(client_socket):
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(('localhost', 8080))
+    server_socket.bind(('localhost', 11135))
     server_socket.listen(5)
-    print("Server is listening on port", 8080)
+    print("Server is listening on port", 11135)
 
     # Wrap the server socket with SSL
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)

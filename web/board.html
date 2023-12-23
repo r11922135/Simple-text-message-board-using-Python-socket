@@ -16,6 +16,12 @@
             padding: 20px;
             background: #fff;
         }
+        .video-container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #fff;
+        }
         h2 {
             text-align: center;
             color: #333;
@@ -71,6 +77,12 @@
             <button type="submit">Post</button>
         </form>
         <a href="/logout">Logout</a>
+    </div>
+    <div class="video-container">
+        <video width="320" height="240" controls>
+            <source src="/video/demo.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
     </div>
     <script>
         let lastMessageId = -1;
