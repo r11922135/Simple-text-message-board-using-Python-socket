@@ -8,18 +8,14 @@ import time
 import ssl
 
 lock = threading.Lock()
+sessions = {}
+
 # Initialize from saved data if available
 if os.path.exists('users.json'):
     with open('users.json', 'r') as f:
         users = json.load(f)
 else:
     users = {}
-
-if os.path.exists('sessions.json'):
-    with open('sessions.json', 'r') as f:
-        sessions = json.load(f)
-else:
-    sessions = {}
 
 if os.path.exists('messages.json'):
     with open('messages.json', 'r') as f:
@@ -114,6 +110,19 @@ def handle_client(client_socket):
                 file_content = file.read()
                 # Set the appropriate content type (e.g., 'video/mp4' for mp4 files)
                 response = f'HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\nContent-Length: {len(file_content)}\r\n\r\n'
+                client_socket.sendall(response.encode() + file_content)
+        except FileNotFoundError:
+            client_socket.sendall(b'HTTP/1.1 404 Not Found\r\n\r\n')
+        finally:
+            client_socket.close()
+        return
+    elif method == 'GET' and path.startswith('/audio/'):
+        # Serving static files (e.g., video, images)
+        try:
+            with open(path[1:], 'rb') as file:  # Adjust the path according to your directory structure
+                file_content = file.read()
+                # Set the appropriate content type (e.g., 'video/mp4' for mp4 files)
+                response = f'HTTP/1.1 200 OK\r\nContent-Type: audio/mpeg\r\nContent-Length: {len(file_content)}\r\n\r\n'
                 client_socket.sendall(response.encode() + file_content)
         except FileNotFoundError:
             client_socket.sendall(b'HTTP/1.1 404 Not Found\r\n\r\n')

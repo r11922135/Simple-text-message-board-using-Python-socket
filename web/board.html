@@ -22,6 +22,12 @@
             padding: 20px;
             background: #fff;
         }
+        .audio-container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #fff;
+        }
         h2 {
             text-align: center;
             color: #333;
@@ -83,6 +89,12 @@
             <source src="/video/demo.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
+    </div>
+    <div class="audio-container">
+        <audio controls>
+            <source src="/audio/demo.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
     </div>
     <script>
         let lastMessageId = -1;
