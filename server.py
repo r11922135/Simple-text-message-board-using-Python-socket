@@ -5,7 +5,7 @@ import json
 import html
 import os
 import time
-import ssl
+#import ssl
 
 lock = threading.Lock()
 sessions = {}
@@ -159,13 +159,14 @@ def start_server():
     print("Server is listening on port", 11135)
 
     # Wrap the server socket with SSL
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    context.load_cert_chain(certfile='server.crt', keyfile='server.key')  # Load your certificate and private key
-    ssl_server_socket = context.wrap_socket(server_socket, server_side=True)
+    #context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    #context.load_cert_chain(certfile='server.crt', keyfile='server.key')  # Load your certificate and private key
+    #ssl_server_socket = context.wrap_socket(server_socket, server_side=True)
 
     while True:
         try:
-            client_socket, client_address = ssl_server_socket.accept()
+            #client_socket, client_address = ssl_server_socket.accept()
+            client_socket, client_address = server_socket.accept()
             client_thread = threading.Thread(target=handle_client, args=(client_socket,))
             client_thread.start()
         except:
